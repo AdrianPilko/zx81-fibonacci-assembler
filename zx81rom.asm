@@ -15,5 +15,6 @@ FAST            EQU $0F23
 SLOW            EQU $0F2B
 SLOWORFAST		EQU $0207
 PAUSE			EQU $0F32
+SCROLL 			EQU $0C0E
 ;sys vars
 ERR_NR			EQU $4000

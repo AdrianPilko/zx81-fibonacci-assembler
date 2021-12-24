@@ -19,25 +19,9 @@ to_print .equ $5050 ;use hprint128
 	
 	jp start
 	
-hprint 
-	push af ;store the original value of a for later
-	and $f0 ; isolate the first digit
-	rra
-	rra
-	rra
-	rra
-	add a,$1c ; add 28 to the character code
-	call PRINT ;
-	pop af ; retrieve original value of a
-	and $0f ; isolate the second digit
-	add a,$1c ; add 28 to the character code
-	call PRINT
-	ld a, 0;_NL ;print new line ; 00 is space
-	call PRINT ; print a space character
-	ret
-
 hprint128  ; print one 16byte number stored in location $to_print
-	ld hl,$to_print
+	;ld hl,$to_print
+	ld hl,$to_print+$0f	
 	ld b,16	
 hprint128_loop	
 	ld a, (hl)
@@ -56,7 +40,7 @@ hprint128_loop
 	ld a, 00;_NL ;print new line ; 00 is space
 	;call PRINT ; print a space character
 	
-	inc hl
+	dec hl
 	djnz hprint128_loop
 	; restore registers
 	ld a, 00
@@ -89,6 +73,7 @@ zero128_loop
 	ret
 	
 copy128	; copy 16byte value from start locations adressed by de to hl	
+
 	ld b,$10			; set loop counter
 copy128_loop
 	ld a,(de)	
@@ -96,6 +81,7 @@ copy128_loop
 	inc de
 	inc hl
 	djnz copy128_loop	; single instruction decrements b compares not zero else jumps
+
 	ret
 	
 start	
@@ -109,41 +95,57 @@ start
 					;;; set s2 to the second in fibonacci sequence ie "1", s1 is already zero
 	push ix
 	ld ix, s2		
-	ld (ix+$0f),1	
+	ld (ix),1	
 	pop ix
 	
-	ld e,$05			; set loop control variable for next loop	
+	ld de, s1		; copy sumof to print buffer 
+	ld hl, to_print		;
+	call copy128		; clobbers de and hl	
+	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
+
+	ld de, s2		; copy sumof to print buffer 
+	ld hl, to_print		;
+	call copy128		; clobbers de and hl	
+	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
+	
+	ld d,$0f			; set loop control variable for next loop	
 
 loop1 		
+	push de
 	; s1 contains first number to add
 	; s2 contains second number to add
 	; sumof is result	
-	push de
+	
 	push af
-	push bc
+	push bc	
 	push ix
 	call sum128
 	pop ix
 	pop bc
-	pop af
+	pop af	
 	ld de, sumof		; copy sumof to print buffer 
 	ld hl, to_print		;
-	call copy128		; clobbers de and hl	
 	
+	call copy128		; clobbers b, de and hl		
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
-
-	ld de, s2		; copy from s1 to s2 for the next sum
-	ld hl, s1			;
-	call copy128		; clobbers de and hl		
-	
+	call PAUSE 			; just to see whats happening: assembler runs so fast can't see it update
+	call PAUSE 			; just to see whats happening: assembler runs so fast can't see it update
+	call PAUSE 			; just to see whats happening: assembler runs so fast can't see it update
+	ld de, s2			; copy from s1 to s2 for the next sum
+	ld hl, s1			;	
+	call copy128		; clobbers b, de and hl			
 	ld de, sumof		; copy from sumof to s2 for the next sum
-	ld hl, s2			;
-	call copy128		; clobbers de and hl		
-
+	ld hl, s2			;	
+	call copy128		; clobbers b, de and hl	
+	
 	pop de
-	dec e				; update loop control variable, decrement 
-	cp e				; compare loop control
-	jp nz, loop1		; jump if loop control variable not zero
+	dec d
+	cp d
+	jp z, skip
+;	call CLS
+skip
+	jr loop1		; jump if loop control variable not zero	
+	
 	ret
 
 ;include our variables
