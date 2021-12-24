@@ -9,15 +9,33 @@
 ;the standard REM statement that will contain our 'hex' code
 #include "line1.asm"
 
-current	.equ $5000
-last 	.equ $5010
-s1 		.equ $5020 ;use in sum128
-s2 		.equ $5030 ;use in sum128
-sumof 	.equ $5040 ;use in sum128
-to_print .equ $5050 ;use hprint128
-	
+current	.equ $8f00
+last 	.equ $8f10
+s1 		.equ $8f20 ;use in sum128
+s2 		.equ $8f30 ;use in sum128
+sumof 	.equ $8f40 ;use in sum128
+to_print .equ $8f50 ;use hprint128
+mainLoopCount .equ $8f60	
 	
 	jp start
+	
+hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
+	PUSH AF ;store the original value of A for later
+	AND $F0 ; isolate the first digit
+	RRA
+	RRA
+	RRA
+	RRA
+	ADD A,$1C ; add 28 to the character code
+	CALL PRINT ;
+	POP AF ; retrieve original value of A
+	AND $0F ; isolate the second digit
+	ADD A,$1C ; add 28 to the character code
+	CALL PRINT
+	LD A,$00
+	CALL PRINT ; print a space character
+	RET
+	
 	
 hprint128  ; print one 16byte number stored in location $to_print
 	;ld hl,$to_print
@@ -108,29 +126,24 @@ start
 	call copy128		; clobbers de and hl	
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
 	
-	ld d,$0f			; set loop control variable for next loop	
-
-loop1 		
-	push de
+	ld hl,mainLoopCount
+	ld a,$10
+	ld (hl),a
+	
+loop1 			
+	
 	; s1 contains first number to add
 	; s2 contains second number to add
 	; sumof is result	
-	
-	push af
-	push bc	
 	push ix
 	call sum128
 	pop ix
-	pop bc
-	pop af	
+
 	ld de, sumof		; copy sumof to print buffer 
 	ld hl, to_print		;
 	
 	call copy128		; clobbers b, de and hl		
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
-	call PAUSE 			; just to see whats happening: assembler runs so fast can't see it update
-	call PAUSE 			; just to see whats happening: assembler runs so fast can't see it update
-	call PAUSE 			; just to see whats happening: assembler runs so fast can't see it update
 	ld de, s2			; copy from s1 to s2 for the next sum
 	ld hl, s1			;	
 	call copy128		; clobbers b, de and hl			
@@ -138,14 +151,26 @@ loop1
 	ld hl, s2			;	
 	call copy128		; clobbers b, de and hl	
 	
-	pop de
-	dec d
-	cp d
-	jp z, skip
-;	call CLS
-skip
-	jr loop1		; jump if loop control variable not zero	
+
+	ld hl,mainLoopCount
+	ld a,(hl)	
+	dec a
+	ld (hl),a
+	cp a
+	jp nz, skip
 	
+	ld hl,mainLoopCount
+	ld a,$10
+	ld (hl),a
+	
+	;cp a
+	;jp nz, skip
+	;call PAUSE
+	;call SCROLL
+	;call CLS
+	;ld a,$0f			; set loop control variable for next loop	
+	jp loop1
+skip	
 	ret
 
 ;include our variables
@@ -162,4 +187,3 @@ skip
 
 ;close out the basic program
 #include "endbasic.asm"
-						
