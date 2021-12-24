@@ -77,6 +77,17 @@ sum128_loop
 	djnz sum128_loop
 	ret
 	
+zero128				; zero 128bits starting from hl,
+					; b and hl clobbered by this
+	ld b,$10			; set loop control variable for next loop "$" shows its hex
+zero128_loop
+	ld (hl),0			; set the thing hl points to to a constant
+	inc hl	
+	dec b				; update loop control variable, decrement 
+	cp b				; compare loop control
+	jp nz, zero128_loop		; jump if loop control variable not zero
+	ret
+	
 copy128	; copy 16byte value from start locations adressed by de to hl	
 	ld b,$10			; set loop counter
 copy128_loop
@@ -87,65 +98,27 @@ copy128_loop
 	djnz copy128_loop	; single instruction decrements b compares not zero else jumps
 	ret
 	
-;start
-	call CLS
-	ld a,0  		; set a to first in fibonacci sequenceie zero	
-	ld b,1 			; set b to 2nd in fibonacci sequence	
-	ld hl,(s1) 		; store a in s1
-	ld (hl),a		; 
-	ld hl,(s2) 		; store b in s2
-	ld (hl),b		; 
-	;call sum128		; requires s1 s2 to have 128bit locations with the two numbers to add
-	;setup fo copy128 from ix to hl
-	ld ix,sumof
-	ld hl,to_print
-	call copy128
-	call hprint128  ; print the sum which is stored in to_print
 start	
-	ld e,$10			; set loop control variable for next loop "$" shows its hex
-	ld hl, to_print		; set hl to point to "to_print" print buffer
+	call CLS	
+	ld hl, s1		;;; initialise s1 s2 and sumof all to zero
+	call zero128	
+	ld hl, s2		
+	call zero128		
+	ld hl, sumof		
+	call zero128
+					;;; set s2 to the second in fibonacci sequence ie "1", s1 is already zero
+	push ix
+	ld ix, s2		
+	ld (ix+$0f),1	
+	pop ix
 	
-loopzero 	
-	ld (hl),0			; set the thing hl points to to a constant
-	inc hl	
-	dec e				; update loop control variable, decrement 
-	cp e				; compare loop control
-	jp nz, loopzero		; jump if loop control variable not zero
-	
-	ld e,$05			; set loop control variable for next loop
-	ld hl, to_print		; reset hl back to to_print print buffer		
+	ld e,$05			; set loop control variable for next loop	
 
-loop1 	
-	ld (hl),e
-	inc hl	
-	
-	push hl				; need to save hl as clobbered by hprint128
-	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
-	pop hl				; restore hl after hprint128 
-	push hl				; push it again because copy128 clobbers it
-	push de				; push de because copy128 clobbers it
-	ld de, to_print		; copy from print buffer to s1 for the sum
-	ld hl, s1			;
-	call copy128		; clobbers de and hl
-	;pop de				; restore de (comment out not yet)
-	;pop hl				; restore hl (commented out not yet)
-	
-	; now print s1 to confirm it has same value as to_print had, but zero to_print before the copy
-	ld hl, to_print		; set hl to point to "to_print" print buffer
-;	ld e,$10			; set loop control variable for next loop "$" shows its hex
-;loopzero1
-	;ld (hl),0			; set the thing hl points to to a constant
-	;inc hl	
-	;dec e				; update loop control variable, decrement 
-	;cp e				; compare loop control
-	;jp nz, loopzero1		; jump if loop control variable not zero
-
-	ld de, to_print		; copy from print buffer to s2 for the sum
-	ld hl, s2			;
-	call copy128		; clobbers de and hl	
+loop1 		
 	; s1 contains first number to add
-	; s1 contains second number to add
+	; s2 contains second number to add
 	; sumof is result	
+	push de
 	push af
 	push bc
 	push ix
@@ -158,10 +131,16 @@ loop1
 	call copy128		; clobbers de and hl	
 	
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
-	;;;;;
-	pop de				; restore de (comment out not yet)
-	pop hl				; restore hl (commented out not yet)	
+
+	ld de, s2		; copy from s1 to s2 for the next sum
+	ld hl, s1			;
+	call copy128		; clobbers de and hl		
 	
+	ld de, sumof		; copy from sumof to s2 for the next sum
+	ld hl, s2			;
+	call copy128		; clobbers de and hl		
+
+	pop de
 	dec e				; update loop control variable, decrement 
 	cp e				; compare loop control
 	jp nz, loop1		; jump if loop control variable not zero
