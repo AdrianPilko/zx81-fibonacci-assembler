@@ -1,4 +1,6 @@
-#include "zx81defs.asm"
+;; zx81 -fibonacci 
+
+#include "zx81defs.asm" ;; https://www.sinclairzxworld.com/viewtopic.php?t=2186&start=40
 ;EQUs for ROM routines
 #include "zx81rom.asm"
 ;ZX81 char codes/how to survive without ASCII
@@ -24,11 +26,6 @@ mainLoopCount_mem
 	DEFB 0
 mainCLSCountDown_mem
 	DEFB 0
-;s1 		.equ 30000 ;use in sum128
-;s2 		.equ 30016 ;use in sum128
-;sumof 	.equ 30032 ;use in sum128
-;to_print .equ 30048 ;use hprint128
-;mainLoopCount .equ 30064
 
 mainLoopCount .equ mainLoopCount_mem
 s1 		.equ s1_mem ;use in sum128
