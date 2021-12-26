@@ -22,7 +22,8 @@ to_print_mem
 	DEFB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 mainLoopCount_mem
 	DEFB 0
-
+mainCLSCountDown_mem
+	DEFB 0
 ;s1 		.equ 30000 ;use in sum128
 ;s2 		.equ 30016 ;use in sum128
 ;sumof 	.equ 30032 ;use in sum128
@@ -131,8 +132,14 @@ start
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
 	
 	ld hl,mainLoopCount
-	ld a,$0f
+	ld a,$14
 	ld (hl),a
+
+	ld hl,mainCLSCountDown_mem  ;; limit the number of screen clears and the 23 * 8 fib numbers
+	ld a,9
+	ld (hl),a
+		
+	
 	
 mainloopFib
 	; s1 contains first number to add
@@ -157,7 +164,6 @@ mainloopFib
 	ld bc, 16
 	ldir				; move 16 bytes from hl of de
 
-
 	ld hl,mainLoopCount
 	ld a,(hl)	
 	dec a
@@ -166,9 +172,17 @@ mainloopFib
 	ld (hl),a
 
 	ld hl,mainLoopCount
-	ld a,$0f
+	ld a,$14
 	ld (hl),a	
-	call CLS
+
+	ld hl,mainCLSCountDown_mem
+	ld a, (hl)
+	dec a
+	jp z, endPROG
+	ld (hl),a
+	
+	call CLS	
+	
 	jp mainloopFib
 	
 skip
