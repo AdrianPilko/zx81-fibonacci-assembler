@@ -9,16 +9,33 @@
 ;the standard REM statement that will contain our 'hex' code
 #include "line1.asm"
 
-current	.equ $8f00
-last 	.equ $8f10
-s1 		.equ $8f20 ;use in sum128
-s2 		.equ $8f30 ;use in sum128
-sumof 	.equ $8f40 ;use in sum128
-to_print .equ $8f50 ;use hprint128
-mainLoopCount .equ $8f60	
-	
+
 	jp start
 	
+s1_mem
+	DEFB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+s2_mem
+	DEFB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+sumof_mem
+	DEFB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+to_print_mem
+	DEFB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+mainLoopCount_mem
+	DEFB 0
+
+;s1 		.equ 30000 ;use in sum128
+;s2 		.equ 30016 ;use in sum128
+;sumof 	.equ 30032 ;use in sum128
+;to_print .equ 30048 ;use hprint128
+;mainLoopCount .equ 30064
+
+mainLoopCount .equ mainLoopCount_mem
+s1 		.equ s1_mem ;use in sum128
+s2 		.equ s2_mem ;use in sum128
+sumof 	.equ sumof_mem ;use in sum128
+to_print .equ to_print_mem ;use hprint128
+
+
 hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
 	PUSH AF ;store the original value of A for later
 	AND $F0 ; isolate the first digit
@@ -32,7 +49,7 @@ hprint 		;;http://swensont.epizy.com/ZX81Assembly.pdf?i=1
 	AND $0F ; isolate the second digit
 	ADD A,$1C ; add 28 to the character code
 	CALL PRINT
-	LD A,$00
+	LD A,_NL
 	CALL PRINT ; print a space character
 	RET
 	
@@ -61,22 +78,21 @@ hprint128_loop
 	dec hl
 	djnz hprint128_loop
 	; restore registers
-	ld a, 00
+	ld a, _NL
+	call PRINT
 	
 	ret
 	
 sum128 ;; add two 128bit values from memory locations s1 , then store in sumof
-		;; all three locations MUST be consecutive in memory $10 appart
-		;; a b and ix are clobbered
-	ld ix,$s1
-	ld b,16
-	or a
-sum128_loop
-	ld a,(ix)
-	adc a,(ix+$10)
-	ld (ix+$20),a
-	inc ix
-	djnz sum128_loop
+		;; all three locations MUST be consecutive in memory 16bytes (128bits!) appart
+    ld hl,(s1) \ ld de,(s2) \ add hl,de \ ld (sumof),hl
+    ld hl,(s1+2) \ ld de,(s2+2) \ adc hl,de \ ld (sumof+2),hl
+    ld hl,(s1+4) \ ld de,(s2+4) \ adc hl,de \ ld (sumof+4),hl
+    ld hl,(s1+6) \ ld de,(s2+6) \ adc hl,de \ ld (sumof+6),hl
+    ld hl,(s1+8) \ ld de,(s2+8) \ adc hl,de \ ld (sumof+8),hl
+	ld hl,(s1+10) \ ld de,(s2+10) \ adc hl,de \ ld (sumof+10),hl
+	ld hl,(s1+12) \ ld de,(s2+12) \ adc hl,de \ ld (sumof+12),hl
+	ld hl,(s1+14) \ ld de,(s2+14) \ adc hl,de \ ld (sumof+14),hl
 	ret
 	
 zero128				; zero 128bits starting from hl,
@@ -85,93 +101,87 @@ zero128				; zero 128bits starting from hl,
 zero128_loop
 	ld (hl),0			; set the thing hl points to to a constant
 	inc hl	
-	dec b				; update loop control variable, decrement 
-	cp b				; compare loop control
-	jp nz, zero128_loop		; jump if loop control variable not zero
+	djnz zero128_loop		; jump if loop control variable not zero
 	ret
 	
-copy128	; copy 16byte value from start locations adressed by de to hl	
+start
 
-	ld b,$10			; set loop counter
-copy128_loop
-	ld a,(de)	
-	ld (hl),a
-	inc de
-	inc hl
-	djnz copy128_loop	; single instruction decrements b compares not zero else jumps
-
-	ret
-	
-start	
 	call CLS	
+
 	ld hl, s1		;;; initialise s1 s2 and sumof all to zero
 	call zero128	
-	ld hl, s2		
+	ld hl, s2	
 	call zero128		
 	ld hl, sumof		
 	call zero128
-					;;; set s2 to the second in fibonacci sequence ie "1", s1 is already zero
-	push ix
-	ld ix, s2		
-	ld (ix),1	
-	pop ix
-	
-	ld de, s1		; copy sumof to print buffer 
-	ld hl, to_print		;
-	call copy128		; clobbers de and hl	
+					;;; set s2 to the second in fibonacci sequence ie "1", s1 is already zero	
+	ld hl, s2		
+	ld (hl),1	
+
+	ld hl, s1		; copy s1 to print buffer 
+	ld de, to_print		;
+	ld bc, 16
+	ldir				; copy 16 bytes from hl to de	
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
 
-	ld de, s2		; copy sumof to print buffer 
-	ld hl, to_print		;
-	call copy128		; clobbers de and hl	
+	ld hl, s2		; copy s2 to print buffer 
+	ld de, to_print		;
+	ld bc, 16
+	ldir				; copy 16 bytes from hl to de	
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
 	
 	ld hl,mainLoopCount
-	ld a,$10
+	ld a,$0f
 	ld (hl),a
 	
-loop1 			
-	
+mainloopFib
 	; s1 contains first number to add
 	; s2 contains second number to add
 	; sumof is result	
-	push ix
 	call sum128
-	pop ix
 
-	ld de, sumof		; copy sumof to print buffer 
-	ld hl, to_print		;
-	
-	call copy128		; clobbers b, de and hl		
+	ld hl, sumof		; copy sumof to print buffer 
+	ld de, to_print		;
+	ld bc, 16
+	ldir				; move 16 bytes from hl of de
+
 	call hprint128 		; print a 128 bit (16byte numnber as hex to screen)
-	ld de, s2			; copy from s1 to s2 for the next sum
-	ld hl, s1			;	
-	call copy128		; clobbers b, de and hl			
-	ld de, sumof		; copy from sumof to s2 for the next sum
-	ld hl, s2			;	
-	call copy128		; clobbers b, de and hl	
 	
+	ld hl, s2			; copy s2 to s1 
+	ld de, s1			;
+	ld bc, 16
+	ldir				; move 16 bytes from hl of de
+	
+	ld hl, sumof		; copy sumof to s2
+	ld de, s2			;
+	ld bc, 16
+	ldir				; move 16 bytes from hl of de
+
 
 	ld hl,mainLoopCount
 	ld a,(hl)	
 	dec a
-	ld (hl),a
-	cp a
 	jp nz, skip
 	
-	ld hl,mainLoopCount
-	ld a,$10
 	ld (hl),a
+
+	ld hl,mainLoopCount
+	ld a,$0f
+	ld (hl),a	
+	call CLS
+	jp mainloopFib
 	
-	;cp a
-	;jp nz, skip
-	;call PAUSE
-	;call SCROLL
-	;call CLS
-	;ld a,$0f			; set loop control variable for next loop	
-	jp loop1
-skip	
+skip
+	ld hl,mainLoopCount
+	ld (hl),a			; save a back to (hl) (mainLoopCount)
+	jp mainloopFib	
+	
+endPROG
 	ret
+
+
+
+
 
 ;include our variables
 #include "vars.asm"
