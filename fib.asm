@@ -152,7 +152,7 @@ sum128 ;; add two 128bit values from memory locations s1,s2 , then store in sumo
 	ret
 
 sum256 ;; add two 256bit values from memory locations s1, s2, then store in sumof
-		;; all three locations MUST be consecutive in memory 16bytes (128bits!) appart
+		;; all three locations MUST be consecutive in memory 32bytes (256bits!) appart
     ld hl,(s1) \ ld de,(s2) \ add hl,de \ ld (sumof),hl
     ld hl,(s1+2) \ ld de,(s2+2) \ adc hl,de \ ld (sumof+2),hl
     ld hl,(s1+4) \ ld de,(s2+4) \ adc hl,de \ ld (sumof+4),hl
@@ -173,7 +173,7 @@ sum256 ;; add two 256bit values from memory locations s1, s2, then store in sumo
 	ret	
 	
 sum512 ;; add two 512bit values from memory locations s1, s2, then store in sumof
-		;; all three locations MUST be consecutive in memory 16bytes (128bits!) appart
+		;; all three locations MUST be consecutive in memory 64bytes (512bits!) appart
     ld hl,(s1) \ ld de,(s2) \ add hl,de \ ld (sumof),hl
     ld hl,(s1+2) \ ld de,(s2+2) \ adc hl,de \ ld (sumof+2),hl
     ld hl,(s1+4) \ ld de,(s2+4) \ adc hl,de \ ld (sumof+4),hl
