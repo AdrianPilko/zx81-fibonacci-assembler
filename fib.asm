@@ -213,7 +213,7 @@ sum512 ;; add two 512bit values from memory locations s1, s2, then store in sumo
 	
 zero128				; zero 128bits starting from hl,
 					; b and hl clobbered by this
-	ld b,$10			; set loop control variable for next loop "$" shows its hex
+	ld b,16			; set loop control variable for next loop
 zero128_loop
 	ld (hl),0			; set the thing hl points to to a constant
 	inc hl	
@@ -222,7 +222,7 @@ zero128_loop
 
 zero256				; zero 256bits starting from hl,
 					; b and hl clobbered by this
-	ld b,$10			; set loop control variable for next loop "$" shows its hex
+	ld b,32			; set loop control variable for next loop 
 zero256_loop
 	ld (hl),0			; set the thing hl points to to a constant
 	inc hl	
@@ -231,7 +231,7 @@ zero256_loop
 	
 zero512				; zero 512bits starting from hl,
 					; b and hl clobbered by this
-	ld b,$10			; set loop control variable for next loop "$" shows its hex
+	ld b,64			; set loop control variable for next loop
 zero512_loop
 	ld (hl),0			; set the thing hl points to to a constant
 	inc hl	
